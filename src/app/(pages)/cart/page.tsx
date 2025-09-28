@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation'; // ⬅️ add
 import Navbar, { useCart } from '@/components/layouts/navbar';
 import Footer from '@/components/layouts/footer';
+import { BookCategory } from '@/interfaces/book-category';
 
 export default function CartPage() {
   const router = useRouter();
@@ -106,7 +107,7 @@ export default function CartPage() {
                         <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
                           {typeof book.categoryName === 'string'
                             ? book.categoryName
-                            : (book.categoryName as any)?.name ||
+                            : (book.categoryName as BookCategory)?.name ||
                               'Unknown Category'}
                         </span>
                       </div>

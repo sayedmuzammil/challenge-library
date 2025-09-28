@@ -67,7 +67,7 @@ const CategoryPage = () => {
                 <h3 className="text-sm font-medium mb-3">Category</h3>
                 <div className="space-y-2">
                   {Array.isArray(categoriesList) &&
-                    categoriesList.map((category: any) => (
+                    categoriesList.map((category: BookCategory) => (
                       // <div> a </div>
                       <label
                         key={category.id}

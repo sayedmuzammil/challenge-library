@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Navbar from '@/components/layouts/navbar';
 import api from '@/app/api/api';
 import Image from 'next/image';
+import axios, { AxiosError } from 'axios';
 
 type User = {
   id: number;
@@ -102,17 +103,22 @@ export default function CheckoutPage() {
           if (res?.data && res.data.success === false) {
             throw new Error(res.data.message || 'Borrowing failed.');
           }
-        } catch (e: any) {
-          // Axios errors carry response info
-          const msg =
-            e?.response?.data?.message ||
-            e?.response?.data?.error ||
-            e?.message ||
-            'Borrowing failed.';
-
+        } catch (e: unknown) {
+          let msg = 'Borrowing failed.';
+          if (axios.isAxiosError(e)) {
+            const ax = e as AxiosError<{ message?: string; error?: string }>;
+            msg =
+              ax.response?.data?.message ??
+              ax.response?.data?.error ??
+              ax.message ??
+              msg;
+          } else if (e instanceof Error) {
+            msg = e.message ?? msg;
+          } else if (typeof e === 'string') {
+            msg = e;
+          }
           setErrorMsg(msg);
           setErrorOpen(true);
-          // stop processing further items
           return;
         }
       }
