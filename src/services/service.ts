@@ -52,6 +52,14 @@ interface BooksApiResponse {
   books: Book[];
 }
 
+interface PaginatedBooksApiResponse {
+  books: Book[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 // Login service with proper error handling using Next.js API Routes
 export const loginService = {
   login: async (credentials: LoginFormData): Promise<LoginApiResponse> => {
@@ -67,7 +75,7 @@ export const loginService = {
       if (response.status === 200 && response.data?.success) {
         // Store token safely with null checks
         if (response.data?.data?.token) {
-          localStorage.setItem('token', response.data.data.token);
+          localStorage.setItem('token', `Bearer ${response.data.data.token}`);
           console.log('Token saved to localStorage');
         } else {
           console.warn('No token found in response');
@@ -160,6 +168,23 @@ export const homeService = {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch recommended books:', error);
+      throw error;
+    }
+  },
+
+  getBooks: async (
+    page: number,
+    limit: number
+  ): Promise<ApiResponse<PaginatedBooksApiResponse>> => {
+    try {
+      const response = await axios.get<ApiResponse<PaginatedBooksApiResponse>>(
+        `/api/get-book?page=${page}&limit=${limit}`
+      );
+
+      console.log('Books fetched successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch books:', error);
       throw error;
     }
   },

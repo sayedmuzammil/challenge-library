@@ -12,6 +12,8 @@ export const apiEndpoints = {
   getBookByAuthor: 'authors/:id/books',
   getProfile: 'me',
   getLoanBooks: 'me/loans',
+  postLoanBook: 'loans',
+  getMyLoansBooks: 'loans/my',
   // getUser: 'users/:id',
   // getUsers: 'users',
   // getUserBooks: 'users/:id/books',

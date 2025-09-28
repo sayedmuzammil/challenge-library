@@ -3,20 +3,20 @@
 import React, { useContext, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createContext } from 'react';
-
-interface CartItem {
-  bookId: number;
-  bookName: string;
-  categoryName: string;
-  authorName: string;
-  bookImage: string;
-}
+import Image from 'next/image';
+import { CartItem } from '@/interfaces/cart-item';
 
 // Define cart context
 interface CartContextType {
   cartCount: number;
   cartItems: CartItem[];
-  addToCart: (bookId: number) => void;
+  addToCart: (
+    bookId: number,
+    bookName?: string,
+    categoryName?: string,
+    authorName?: string,
+    bookImage?: string
+  ) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -36,42 +36,56 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   useEffect(() => {
-    // Load cart count from localStorage on initial render
-    const savedCartCount = localStorage.getItem('cartCount');
-    if (savedCartCount) {
-      setCartCount(parseInt(savedCartCount, 10));
+    // Load cart items and count from localStorage on initial render
+    const savedCartItems = localStorage.getItem('cartItems');
+    if (savedCartItems) {
+      try {
+        const parsedItems = JSON.parse(savedCartItems);
+        setCartItems(parsedItems);
+        setCartCount(parsedItems.length);
+      } catch (e) {
+        console.error('Error parsing cart items from localStorage', e);
+        setCartItems([]);
+        setCartCount(0);
+      }
+    } else {
+      // If no cart items, ensure count is 0
+      setCartCount(0);
     }
   }, []);
 
   const addToCart = (
     bookId: number,
-    bookName: string,
-    categoryName: string,
-    authorName: string,
-    bookImage: string
+    bookName?: string,
+    categoryName?: string,
+    authorName?: string,
+    bookImage?: string
   ) => {
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.bookId === bookId);
       let updatedItems: CartItem[];
 
       if (existingItem) {
-        // If book already in cart, increase quantity
-        updatedItems = prevItems.map((item) =>
-          item.bookId === bookId ? { ...item } : item
-        );
+        // If book already in cart, we're not changing quantity, just keep as is
+        updatedItems = [...prevItems];
       } else {
-        // If new book, add to cart
-        updatedItems = [
-          ...prevItems,
-          { bookId, bookName, categoryName, authorName, bookImage },
-        ];
+        // If we have all the required information, add to cart
+        if (bookName && categoryName && authorName && bookImage) {
+          updatedItems = [
+            ...prevItems,
+            { bookId, bookName, categoryName, authorName, bookImage },
+          ];
+        } else {
+          // If missing information, we can't add to cart properly
+          updatedItems = [...prevItems];
+        }
       }
 
       // Save to localStorage
       localStorage.setItem('cartItems', JSON.stringify(updatedItems));
 
       // Update cart count
-      const newCount = updatedItems.reduce((sum, item) => sum, 0);
+      const newCount = updatedItems.length;
       setCartCount(newCount);
 
       return updatedItems;
@@ -123,6 +137,9 @@ const Navbar: React.FC = () => {
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('cartCount');
+    localStorage.removeItem('cartItems');
+
     setIsLoggedIn(false);
     setUser(null);
     setIsDropdownOpen(false);
@@ -150,7 +167,7 @@ const Navbar: React.FC = () => {
           {isLoggedIn && user ? (
             <div className="flex justify-center items-center space-x-4">
               {/* Notification Badge */}
-              <div className="relative">
+              <Link href="/cart" className="relative">
                 <svg
                   className="w-6 h-6 text-gray-600"
                   fill="none"
@@ -161,13 +178,13 @@ const Navbar: React.FC = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M15 17h4V8h-4V5a3 3 0 00-3 3v14a3 3 0 003 3z"
+                    d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m0 0h8m-8 0a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4z"
                   />
                 </svg>
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cartCount}
                 </span>
-              </div>
+              </Link>
               <div className="relative dropdown-container">
                 <div
                   className="flex items-center space-x-2 cursor-pointer user-dropdown"
@@ -175,7 +192,9 @@ const Navbar: React.FC = () => {
                 >
                   {/* User Avatar */}
                   <div className="relative">
-                    <img
+                    <Image
+                      width={48}
+                      height={48}
                       src="/images/default-avatar.png"
                       alt="User"
                       className="w-10 h-10 rounded-full object-cover"

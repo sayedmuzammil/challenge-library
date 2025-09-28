@@ -19,7 +19,7 @@ const AuthorPage = () => {
         );
         const data = await response.json();
 
-        const booklist = data.books;
+        // const booklist = data.books;
         console.log('Book data fetched successfully:', data);
         setAuthorBooks(data.data.books);
       } catch (error) {
@@ -28,7 +28,7 @@ const AuthorPage = () => {
     };
 
     authorBooks();
-  }, []);
+  }, [authorId]);
 
   console.log('Book data:', authorBooks);
 

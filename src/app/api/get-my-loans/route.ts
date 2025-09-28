@@ -4,22 +4,27 @@ import { apiEndpoints } from '../endpoints';
 
 export async function GET(request: NextRequest) {
   try {
-    // Extract query parameters from the request URL
-    const { searchParams } = new URL(request.url);
-    const page = searchParams.get('page') || '1';
-    const limit = searchParams.get('limit') || '20';
+    // Get the Authorization header from the incoming request
+    const authHeader = request.headers.get('authorization');
 
-    // Construct the API URL with query parameters
-    const apiUrl = `${process.env.NEXT_PUBLIC_BASE_API_URL}${apiEndpoints.getBooks}?page=${page}&limit=${limit}`;
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: 'Authorization header is required' },
+        { status: 401 }
+      );
+    }
+
+    // Construct the API URL
+    const apiUrl = `${process.env.NEXT_PUBLIC_BASE_API_URL}${apiEndpoints.getMyLoansBooks}`;
 
     const response = await axios.get(apiUrl, {
       headers: {
-        'Content-Type': 'application/json',
         accept: '*/*',
+        Authorization: authHeader,
       },
     });
 
-    console.log('Books fetched successfully:', response.data);
+    console.log('Load Books fetched successfully:', response.data);
 
     return NextResponse.json(response.data);
   } catch (error: unknown) {
@@ -27,12 +32,12 @@ export async function GET(request: NextRequest) {
       const err = error as AxiosError;
       const status = err.response?.status ?? 500;
       const payload = err.response?.data ?? { error: 'Internal Server Error' };
-      console.error('Failed to fetch books:', payload);
+      console.error('Failed to fetch loan books:', payload);
       return NextResponse.json({ error: payload }, { status });
     }
 
     const message = (error as Error)?.message ?? 'Internal Server Error';
-    console.error('Failed to fetch books:', message);
+    console.error('Failed to fetch loan books:', message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

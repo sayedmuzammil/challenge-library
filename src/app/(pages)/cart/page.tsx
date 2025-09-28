@@ -1,51 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation'; // ⬅️ add
+import Navbar, { useCart } from '@/components/layouts/navbar';
+import Footer from '@/components/layouts/footer';
 
 export default function CartPage() {
-  const [selectedBooks, setSelectedBooks] = useState<number[]>([0, 1]); // Example: first two books selected
+  const router = useRouter();
+  const [selectedBooks, setSelectedBooks] = useState<number[]>([]); // ⬅️ start empty
   const [selectAll, setSelectAll] = useState(false);
+  const { cartItems } = useCart();
 
-  // Mock data for books in cart
-  const booksInCart = [
-    {
-      id: 0,
-      cover: '/placeholder-cover.jpg', // Replace with actual cover image path
-      category: 'Fiction',
-      title: 'Book Name',
-      author: 'Author name',
-    },
-    {
-      id: 1,
-      cover: '/placeholder-cover.jpg', // Replace with actual cover image path
-      category: 'Fiction',
-      title: 'Book Name',
-      author: 'Author name',
-    },
-    {
-      id: 2,
-      cover: '/placeholder-cover.jpg', // Replace with actual cover image path
-      category: 'Fiction',
-      title: 'Book Name',
-      author: 'Author name',
-    },
-    {
-      id: 3,
-      cover: '/placeholder-cover.jpg', // Replace with actual cover image path
-      category: 'Fiction',
-      title: 'Book Name',
-      author: 'Author name',
-    },
-  ];
+  // Keep selections valid if cart changes; if select-all is on, reselect all.
+  useEffect(() => {
+    if (selectAll) {
+      setSelectedBooks(cartItems.map((i) => i.bookId));
+    } else {
+      // remove ids that no longer exist in cart
+      const ids = new Set(cartItems.map((i) => i.bookId));
+      setSelectedBooks((prev) => prev.filter((id) => ids.has(id)));
+    }
+  }, [cartItems, selectAll]);
 
   const handleSelectAll = () => {
-    setSelectAll(!selectAll);
-    if (!selectAll) {
-      setSelectedBooks(booksInCart.map((book) => book.id));
-    } else {
-      setSelectedBooks([]);
-    }
+    setSelectAll((prev) => {
+      const next = !prev;
+      setSelectedBooks(next ? cartItems.map((i) => i.bookId) : []);
+      return next;
+    });
   };
 
   const handleBookSelection = (bookId: number) => {
@@ -58,8 +41,20 @@ export default function CartPage() {
 
   const totalSelectedItems = selectedBooks.length;
 
+  async function onBorrowClick() {
+    if (totalSelectedItems === 0) return;
+
+    // Keep only selected items for checkout
+    const selected = cartItems.filter((i) => selectedBooks.includes(i.bookId));
+    // Save to localStorage so the checkout page can load it
+    localStorage.setItem('cartItems', JSON.stringify(selected));
+    // Go to checkout
+    router.push('/checkout');
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
+      <Navbar />
       <h1 className="text-2xl font-bold mb-6">My Cart</h1>
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -79,39 +74,53 @@ export default function CartPage() {
           </div>
 
           <div className="space-y-4">
-            {booksInCart.map((book) => (
-              <div key={book.id} className="border-b pb-4 last:border-b-0">
-                <div className="flex items-start space-x-4">
-                  <input
-                    type="checkbox"
-                    id={`book-${book.id}`}
-                    checked={selectedBooks.includes(book.id)}
-                    onChange={() => handleBookSelection(book.id)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 mt-1"
-                  />
-
-                  <div className="flex-shrink-0">
-                    <Image
-                      src={book.cover}
-                      alt={book.title}
-                      width={96}
-                      height={144}
-                      className="w-24 h-32 object-cover rounded"
+            {Array.isArray(cartItems) && cartItems.length > 0 ? (
+              cartItems.map((book) => (
+                <div
+                  key={book.bookId}
+                  className="border-b pb-4 last:border-b-0"
+                >
+                  <div className="flex items-start space-x-4">
+                    <input
+                      type="checkbox"
+                      id={`book-${book.bookId}`}
+                      checked={selectedBooks.includes(book.bookId)}
+                      onChange={() => handleBookSelection(book.bookId)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 mt-1"
                     />
-                  </div>
-
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
-                        {book.category}
-                      </span>
+                    <div className="flex-shrink-0">
+                      <Image
+                        src={
+                          typeof book.bookImage === 'string'
+                            ? book.bookImage
+                            : '/images/default-book.png'
+                        }
+                        alt={book.bookName}
+                        width={96}
+                        height={144}
+                        className="w-24 h-32 object-cover rounded"
+                      />
                     </div>
-                    <h3 className="font-semibold text-lg">{book.title}</h3>
-                    <p className="text-sm text-gray-600">{book.author}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                          {typeof book.categoryName === 'string'
+                            ? book.categoryName
+                            : (book.categoryName as any)?.name ||
+                              'Unknown Category'}
+                        </span>
+                      </div>
+                      <h3 className="font-semibold text-lg">{book.bookName}</h3>
+                      <p className="text-sm text-gray-600">{book.authorName}</p>
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center">
+                <p className="text-gray-600">No books found.</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -124,7 +133,8 @@ export default function CartPage() {
               <span className="font-medium">{totalSelectedItems} Items</span>
             </div>
             <button
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+              onClick={onBorrowClick}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50"
               disabled={totalSelectedItems === 0}
             >
               Borrow Book
@@ -132,6 +142,8 @@ export default function CartPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

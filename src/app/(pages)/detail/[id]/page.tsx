@@ -4,12 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layouts/navbar';
 import Footer from '@/components/layouts/footer';
 import { useParams } from 'next/navigation';
-import { Author } from '../../../../interfaces/author';
 import { Book } from '../../../../interfaces/book';
 import { BookReview } from '@/interfaces/book-review';
 import { BookRelated } from '../../../../interfaces/book-related';
 import BookLayout from '@/components/layouts/book-layout';
 import { useCart } from '@/components/layouts/navbar';
+import Link from 'next/link';
+import Image from 'next/image';
 
 const DetailPage = () => {
   const [book, setBook] = useState<Book | null>(null);
@@ -32,8 +33,18 @@ const DetailPage = () => {
         setLoading(true);
         setError(null);
 
+        // let id: string;
+        // if (Array.isArray(bookId)) {
+        //   id = bookId[0];
+        // } else if (typeof bookId === 'string') {
+        //   id = bookId;
+        // } else {
+        //   id = String(bookId);
+        // }
+
         // Fetch book details
         const bookResponse = await fetch(`/api/get-book-detail?id=${bookId}`);
+
         const bookData = await bookResponse.json();
         console.log('Book data fetched successfully:', bookData);
 
@@ -79,7 +90,7 @@ const DetailPage = () => {
 
   // Handle add to cart action
   const handleAddToCart = () => {
-    if (bookId) {
+    if (book && bookId) {
       // Convert bookId to number if it's a string
       let id: number;
       if (Array.isArray(bookId)) {
@@ -90,8 +101,14 @@ const DetailPage = () => {
         id = parseInt(bookId as string, 10);
       }
 
-      // Add to cart using the context
-      addToCart(id);
+      // Add to cart using the context with all book details
+      addToCart(
+        id,
+        book.title,
+        book.category || '',
+        book.author.name,
+        book.coverImage || book.image || ''
+      );
 
       // Show success message
       alert('Book added to cart!');
@@ -106,9 +123,9 @@ const DetailPage = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-          <a href="/" className="hover:text-blue-600">
+          <Link href="/" className="hover:text-blue-600">
             Home
-          </a>
+          </Link>
           <span>›</span>
           <a href="/category" className="hover:text-blue-600">
             Category
@@ -121,9 +138,11 @@ const DetailPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Book Cover */}
           <div className="md:col-span-1">
-            <img
-              src={book?.coverImage}
-              alt={book?.title}
+            <Image
+              width={337}
+              height={498}
+              src={book?.coverImage || '/images/default-book.svg'}
+              alt={book?.title || 'Book Cover'}
               className="w-full h-auto rounded-lg shadow-md"
             />
           </div>
@@ -265,7 +284,9 @@ const DetailPage = () => {
                       className="bg-white p-4 rounded-lg shadow-sm border"
                     >
                       <div className="flex items-center mb-3">
-                        <img
+                        <Image
+                          width={64}
+                          height={64}
                           src={review.avatar || '/images/default-avatar.png'}
                           alt={review.user?.name || 'John Doe'}
                           className="w-10 h-10 rounded-full mr-3"

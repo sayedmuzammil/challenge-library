@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
 
@@ -24,7 +25,9 @@ const BookLayout: React.FC<BookLayoutProps> = ({
       >
         <div className="aspect-[3/4] bg-gray-200 rounded-lg mb-3 overflow-hidden">
           {bookCover ? (
-            <img
+            <Image
+              width={224}
+              height={336}
               src={bookCover}
               alt={bookTitle}
               className="w-full h-full object-cover"

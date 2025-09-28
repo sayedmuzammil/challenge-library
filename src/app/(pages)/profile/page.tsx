@@ -18,13 +18,13 @@ const ProfilePage: React.FC = () => {
 
         const responseProfile = await fetch('/api/get-profile', {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `${token}`,
           },
         });
 
-        const responsLoanBooks = await fetch('/api/get-loan-books', {
+        const responsLoanBooks = await fetch('/api/get-my-loans', {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `${token}`,
           },
         });
 
@@ -32,15 +32,18 @@ const ProfilePage: React.FC = () => {
         const dataLoanBooks = await responsLoanBooks.json();
 
         console.log('Profile data fetched successfully:', dataProfile);
-        // console.log('Loan books data fetched successfully:', dataLoanBooks);
+        console.log('Loan books data fetched successfully:', dataLoanBooks);
 
         const userProfile = dataProfile.data.profile;
-        const userLoanBooks = dataLoanBooks.data.loanBooks;
+        const userLoanBooks = dataLoanBooks.data.loans;
         // console.log(data);
 
         setProfile(userProfile);
         setLoanBooks(userLoanBooks);
-      } catch (error) {}
+      } catch (error) {
+        `Error fetching profile or loan books: ${error}`;
+        console.error('Error fetching profile or loan books:', error);
+      }
     };
     getProfile();
   }, []);
@@ -134,97 +137,77 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-              {/* Book Item 1 */}
-              <div className="bg-white p-4 rounded-lg border">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <Image
-                      src="/placeholder-book.jpg"
-                      alt="Book"
-                      width={60}
-                      height={80}
-                      className="rounded-md"
-                    />
-                  </div>
-                  <div className="ml-4 flex-1">
-                    <div className="flex items-center">
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                        Category
-                      </span>
-                      <h3 className="text-lg font-medium ml-2">Book Name</h3>
+              {Array.isArray(loanBooks) && loanBooks.length > 0 ? (
+                loanBooks.map((loan: any) => (
+                  <div key={loan.id} className="bg-white p-4 rounded-lg border">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0">
+                        <Image
+                          src={loan.book.coverImage || '/placeholder-book.jpg'}
+                          alt="Book"
+                          width={60}
+                          height={80}
+                          className="rounded-md"
+                        />
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <div className="flex items-center">
+                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            {loan.book.category || 'Category'}
+                          </span>
+                          <h3 className="text-lg font-medium ml-2">
+                            {loan.book.title || 'Book Name'}
+                          </h3>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {loan.book.author}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(loan.borrowedAt).toLocaleDateString(
+                            'en-GB',
+                            {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            }
+                          )}{' '}
+                          · Due Date{' '}
+                          {new Date(loan.dueAt).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                      <div className="ml-4">
+                        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                          Give Review
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-600">Author name</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      29 Aug 2025 · Duration 3 Days
-                    </p>
-                  </div>
-                  <div className="ml-4">
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                      Give Review
-                    </button>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center mt-3 text-sm">
-                  <div className="flex items-center">
-                    <span className="text-gray-500">Status</span>
-                    <span className="ml-2 text-green-600 font-medium">
-                      Active
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-gray-500">Due Date</span>
-                    <span className="ml-2 text-red-600 font-medium">
-                      31 August 2025
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Book Item 2 */}
-              <div className="bg-white p-4 rounded-lg border">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <Image
-                      src="/placeholder-book.jpg"
-                      alt="Book"
-                      width={60}
-                      height={80}
-                      className="rounded-md"
-                    />
-                  </div>
-                  <div className="ml-4 flex-1">
-                    <div className="flex items-center">
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                        Category
-                      </span>
-                      <h3 className="text-lg font-medium ml-2">Book Name</h3>
+                    <div className="flex justify-between items-center mt-3 text-sm">
+                      <div className="flex items-center">
+                        <span className="text-gray-500">Status</span>
+                        <span className="ml-2 text-green-600 font-medium">
+                          {loan.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-gray-500">Due Date</span>
+                        <span className="ml-2 text-red-600 font-medium">
+                          {new Date(loan.dueAt).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-600">Author name</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      29 Aug 2025 · Duration 3 Days
-                    </p>
                   </div>
-                  <div className="ml-4">
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                      Give Review
-                    </button>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center mt-3 text-sm">
-                  <div className="flex items-center">
-                    <span className="text-gray-500">Status</span>
-                    <span className="ml-2 text-green-600 font-medium">
-                      Returned
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-gray-500">Due Date</span>
-                    <span className="ml-2 text-red-600 font-medium">
-                      31 August 2025
-                    </span>
-                  </div>
-                </div>
-              </div>
+                ))
+              ) : (
+                <p>No borrowed books found.</p>
+              )}
             </div>
             <div className="flex justify-center mt-6">
               <button className="bg-white text-gray-700 px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
